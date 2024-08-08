@@ -1,8 +1,7 @@
 module Main where
 
-import State (runTwoRandoms)
 import Regex (compile, match)
-import Data.ByteString.Char8 (pack)
+import Data.ByteString.Char8 (pack, unpack)
 import Data.ByteString (ByteString)
 import SafeDiv
 

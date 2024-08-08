@@ -2,13 +2,12 @@
 
 module Regex where
 
-import Foreign hiding (unsafePerformIO)
+import Foreign
 import Foreign.C.Types
 import Foreign.C.String
 import Data.ByteString (ByteString, useAsCString, empty)
 import Data.ByteString.Internal (toForeignPtr)
 import Data.ByteString.Unsafe (unsafeDrop, unsafeTake)
-import Foreign.Marshal.Alloc (alloca)
 import System.IO.Unsafe (unsafePerformIO)
 
 #include <pcre.h>
@@ -66,7 +65,7 @@ foreign import ccall "pcre.h pcre_fullinfo"
 capturedCount :: Ptr PCRE -> IO Int
 capturedCount regex_ptr =
   alloca $ \n_ptr -> do
-  c_pcre_fullinfo regex_ptr nullPtr info_capturecount n_ptr
+  _ <- c_pcre_fullinfo regex_ptr nullPtr info_capturecount n_ptr
   return . fromIntegral =<< peek (n_ptr :: Ptr CInt)
 
 match :: Regex -> ByteString -> [PCREExecOption] -> Maybe [ByteString]
