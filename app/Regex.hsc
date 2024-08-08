@@ -97,3 +97,12 @@ match (Regex pcre_fp _) subject os = unsafePerformIO $ do
               where
                 start = unsafeDrop (fromIntegral a) s
                 end = unsafeTake (fromIntegral (b-a)) start
+
+matchStr :: ByteString -> ByteString -> Either String [ByteString]
+matchStr pat s = do
+  regex <- compile pat []
+  match regex s [] `orDie` "not matched"
+    where
+      orDie :: Maybe a -> String -> Either String a
+      Nothing `orDie` err = Left err
+      (Just x) `orDie` _ = Right x
