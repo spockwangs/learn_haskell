@@ -6,11 +6,11 @@ import Data.ByteString (ByteString)
 
 main :: IO ()
 main = do
-  let regexPattern = (pack "quick brown")
+  let regexPattern = (pack "quick brown[")
       str = (pack "quick brow box")
       matches = matchStr regexPattern str
   case matches of
-    Left err -> putStrLn err
+    Left err -> putStrLn ("error: " ++ err)
     Right result -> putStrLn (show result)
   where
     matchStr :: ByteString -> ByteString -> Either String [ByteString]
