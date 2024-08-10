@@ -1,7 +1,9 @@
 module Main where
 
-import RunProcess
+import GHC.Conc (numCapabilities)
+import System.Environment (getArgs)
 
-main :: IO ()
 main = do
-  runIO $ ("ls", ["."]) -|- ("grep", ["^[a-z]\\+[$"]) -|- ("tr", ["a-z", "A-Z"])
+  args <- getArgs
+  putStrLn $ "command line arguments: " ++ show args
+  putStrLn $ "number of cores: " ++ show numCapabilities
