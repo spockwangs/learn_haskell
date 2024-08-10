@@ -4,4 +4,4 @@ import RunProcess
 
 main :: IO ()
 main = do
-  runIO ("ls", ["."])
+  runIO $ ("ls", ["."]) -|- ("grep", ["^[a-z]\\+[$"]) -|- ("tr", ["a-z", "A-Z"])
