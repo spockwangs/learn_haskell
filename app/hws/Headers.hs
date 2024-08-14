@@ -3,7 +3,7 @@
 -- Copyright 2003-2006 Bjorn Bringert
 module Headers (Headers(..),
                 mkHeaders,
-                Header(..), 
+                Header(..),
                 HeaderName(..),
                 HasHeaders(..),
                 -- * Header parsing
@@ -40,7 +40,7 @@ mkHeaders :: [Header] -> Headers
 mkHeaders = Headers
 
 instance Show Headers where
-    showsPrec _  
+    showsPrec _
         = foldr (.) id . map (\x -> shows x . showString crLf) . unHeaders
 
 instance HasHeaders Headers where
@@ -56,7 +56,7 @@ class HasHeaders x where
     listHeaders :: x -> [Header]
     listHeaders = unHeaders . getHeaders
     modifyHeaders :: ([Header] -> [Header]) -> x -> x
-    modifyHeaders f x = setHeaders x $ mkHeaders $ f $ listHeaders x    
+    modifyHeaders f x = setHeaders x $ mkHeaders $ f $ listHeaders x
 
 -- | The Header data type pairs header names & values.
 data Header = Header HeaderName String
@@ -76,15 +76,15 @@ instance Show Header where
 --   1) makes customising header names laborious
 --   2) increases code volume.
 --
-data HeaderName = 
+data HeaderName =
                  -- Generic Headers --
                   HdrCacheControl
                 | HdrConnection
                 | HdrDate
                 | HdrPragma
                 | HdrTrailer
-                | HdrTransferEncoding        
-                | HdrUpgrade                
+                | HdrTransferEncoding
+                | HdrUpgrade
                 | HdrVia
 
                 -- Request Headers --
@@ -140,62 +140,62 @@ data HeaderName =
 
                 -- | Allows for unrecognised or experimental headers.
                 | HdrCustom String -- not in header map below.
-    deriving (Eq,Ord) 
+    deriving (Eq,Ord)
 
 
 -- Translation between header names and values,
 headerNames :: [ (String,HeaderName) ]
-headerNames 
+headerNames
      = [  ("Cache-Control"        ,HdrCacheControl      )
-	, ("Connection"           ,HdrConnection        )
-	, ("Date"                 ,HdrDate              )    
-	, ("Pragma"               ,HdrPragma            )
-	, ("Trailer"              ,HdrTrailer           )
+        , ("Connection"           ,HdrConnection        )
+        , ("Date"                 ,HdrDate              )
+        , ("Pragma"               ,HdrPragma            )
+        , ("Trailer"              ,HdrTrailer           )
 
-	, ("Transfer-Encoding"    ,HdrTransferEncoding  )        
-	, ("Upgrade"              ,HdrUpgrade           )                
-	, ("Via"                  ,HdrVia               )
-	, ("Accept"               ,HdrAccept            )
-	, ("Accept-Charset"       ,HdrAcceptCharset     )
-	, ("Accept-Encoding"      ,HdrAcceptEncoding    )
-	, ("Accept-Language"      ,HdrAcceptLanguage    )
-	, ("Authorization"        ,HdrAuthorization     )
-	, ("From"                 ,HdrFrom              )
-	, ("Host"                 ,HdrHost              )
-	, ("If-Modified-Since"    ,HdrIfModifiedSince   )
-	, ("If-Match"             ,HdrIfMatch           )
-	, ("If-None-Match"        ,HdrIfNoneMatch       )
-	, ("If-Range"             ,HdrIfRange           ) 
-	, ("If-Unmodified-Since"  ,HdrIfUnmodifiedSince )
-	, ("Max-Forwards"         ,HdrMaxForwards       )
-	, ("Proxy-Authorization"  ,HdrProxyAuthorization)
-	, ("Range"                ,HdrRange             )   
-	, ("Referer"              ,HdrReferer           )
-	, ("TE"                   ,HdrTE                )
-	, ("User-Agent"           ,HdrUserAgent         )
-	, ("Age"                  ,HdrAge               )
-	, ("Location"             ,HdrLocation          )
-	, ("Proxy-Authenticate"   ,HdrProxyAuthenticate )
-	, ("Public"               ,HdrPublic            )
-	, ("Retry-After"          ,HdrRetryAfter        )
-	, ("Server"               ,HdrServer            )
-	, ("Vary"                 ,HdrVary              )
-	, ("Warning"              ,HdrWarning           )
-	, ("WWW-Authenticate"     ,HdrWWWAuthenticate   )
-	, ("Allow"                ,HdrAllow             )
-	, ("Content-Base"         ,HdrContentBase       )
-	, ("Content-Encoding"     ,HdrContentEncoding   )
-	, ("Content-Language"     ,HdrContentLanguage   )
-	, ("Content-Length"       ,HdrContentLength     )
-	, ("Content-Location"     ,HdrContentLocation   )
-	, ("Content-MD5"          ,HdrContentMD5        )
-	, ("Content-Range"        ,HdrContentRange      )
-	, ("Content-Type"         ,HdrContentType       )
-	, ("ETag"                 ,HdrETag              )
-	, ("Expires"              ,HdrExpires           )
-	, ("Last-Modified"        ,HdrLastModified      )
-   	, ("Set-Cookie"           ,HdrSetCookie         )
-	, ("Cookie"               ,HdrCookie            )
+        , ("Transfer-Encoding"    ,HdrTransferEncoding  )
+        , ("Upgrade"              ,HdrUpgrade           )
+        , ("Via"                  ,HdrVia               )
+        , ("Accept"               ,HdrAccept            )
+        , ("Accept-Charset"       ,HdrAcceptCharset     )
+        , ("Accept-Encoding"      ,HdrAcceptEncoding    )
+        , ("Accept-Language"      ,HdrAcceptLanguage    )
+        , ("Authorization"        ,HdrAuthorization     )
+        , ("From"                 ,HdrFrom              )
+        , ("Host"                 ,HdrHost              )
+        , ("If-Modified-Since"    ,HdrIfModifiedSince   )
+        , ("If-Match"             ,HdrIfMatch           )
+        , ("If-None-Match"        ,HdrIfNoneMatch       )
+        , ("If-Range"             ,HdrIfRange           )
+        , ("If-Unmodified-Since"  ,HdrIfUnmodifiedSince )
+        , ("Max-Forwards"         ,HdrMaxForwards       )
+        , ("Proxy-Authorization"  ,HdrProxyAuthorization)
+        , ("Range"                ,HdrRange             )
+        , ("Referer"              ,HdrReferer           )
+        , ("TE"                   ,HdrTE                )
+        , ("User-Agent"           ,HdrUserAgent         )
+        , ("Age"                  ,HdrAge               )
+        , ("Location"             ,HdrLocation          )
+        , ("Proxy-Authenticate"   ,HdrProxyAuthenticate )
+        , ("Public"               ,HdrPublic            )
+        , ("Retry-After"          ,HdrRetryAfter        )
+        , ("Server"               ,HdrServer            )
+        , ("Vary"                 ,HdrVary              )
+        , ("Warning"              ,HdrWarning           )
+        , ("WWW-Authenticate"     ,HdrWWWAuthenticate   )
+        , ("Allow"                ,HdrAllow             )
+        , ("Content-Base"         ,HdrContentBase       )
+        , ("Content-Encoding"     ,HdrContentEncoding   )
+        , ("Content-Language"     ,HdrContentLanguage   )
+        , ("Content-Length"       ,HdrContentLength     )
+        , ("Content-Location"     ,HdrContentLocation   )
+        , ("Content-MD5"          ,HdrContentMD5        )
+        , ("Content-Range"        ,HdrContentRange      )
+        , ("Content-Type"         ,HdrContentType       )
+        , ("ETag"                 ,HdrETag              )
+        , ("Expires"              ,HdrExpires           )
+        , ("Last-Modified"        ,HdrLastModified      )
+        , ("Set-Cookie"           ,HdrSetCookie         )
+        , ("Cookie"               ,HdrCookie            )
         , ("Expect"               ,HdrExpect            ) ]
 
 toHeaderNameMap :: Map String HeaderName
@@ -211,7 +211,7 @@ instance Show HeaderName where
                Just h  -> h
 
 mkHeaderName :: String -> HeaderName
-mkHeaderName s = 
+mkHeaderName s =
     case Map.lookup (map toLower s) toHeaderNameMap of
       Just n  -> n
       Nothing -> HdrCustom s
@@ -278,8 +278,8 @@ transferCodingStr DeflateTransferCoding  = "deflate"
 
 validTransferCoding :: [TransferCoding] -> Bool
 validTransferCoding codings
-  | null codings 
-    || last codings == ChunkedTransferCoding 
+  | null codings
+    || last codings == ChunkedTransferCoding
        && ChunkedTransferCoding `notElem` init codings = True
   | otherwise = False
 
@@ -287,7 +287,7 @@ validTransferCoding codings
 -- * Values of specific headers
 
 getContentType :: HasHeaders a => a -> Maybe String
-getContentType x = lookupHeader HdrContentType x 
+getContentType x = lookupHeader HdrContentType x
 
 getContentLength :: HasHeaders a => a -> Maybe Integer
 getContentLength x = lookupHeader HdrContentLength x >>= readM
@@ -299,7 +299,7 @@ pHeaders :: Parser Headers
 pHeaders = liftM Headers $ many pHeader
 
 pHeader :: Parser Header
-pHeader = 
+pHeader =
     do name <- pToken
        char ':'
        many pWS1
@@ -309,9 +309,8 @@ pHeader =
        return $ Header (mkHeaderName name) (concat (line:extraLines))
 
 extraFieldLine :: Parser String
-extraFieldLine = 
+extraFieldLine =
     do sp <- pWS1
        line <- lineString
        pCRLF
        return (sp:line)
-
