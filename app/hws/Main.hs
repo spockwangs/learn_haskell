@@ -6,18 +6,18 @@
 -- Redistribution and use in source and binary forms, with or without
 -- modification, are permitted provided that the following conditions are
 -- met:
--- 
+--
 --  * Redistributions of source code must retain the above copyright notice,
 --    this list of conditions and the following disclaimer.
--- 
+--
 --  * Redistributions in binary form must reproduce the above copyright
 --    notice, this list of conditions and the following disclaimer in the
 --    documentation and/or other materials provided with the distribution.
--- 
+--
 --  * Neither the name of the copyright holder(s) nor the names of
 --    contributors may be used to endorse or promote products derived from
 --    this software without specific prior written permission.
--- 
+--
 -- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 -- "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 -- LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -62,7 +62,7 @@ import System.IO.Error
 import System.Posix
 import Text.ParserCombinators.Parsec
 import Data.IP (IPv4, toHostAddress)
-
+import Debug.Trace (trace, traceIO)
 
 {- -----------------------------------------------------------------------------
 ToDo:
@@ -108,14 +108,14 @@ ToDo:
 -- Top-level server
 
 main :: IO ()
-main = 
+main =
     do args <- getArgs
        case parseOptions args of
          Left err   -> die err
          Right opts -> main2 opts
 
 main2 :: Options -> IO ()
-main2 opts = 
+main2 opts =
     do main_thread <- myThreadId
        installHandler sigPIPE Ignore Nothing
        installHandler sigHUP (Catch (hupHandler main_thread)) Nothing
@@ -137,28 +137,34 @@ readConfig restore opts = do
     blockSignals sigsToBlock
     r <- parseConfig (configPath opts)
     case r of
-      Left err -> die $ unlines ["Failed to parse configuration file", 
+      Left err -> die $ unlines ["Failed to parse configuration file",
                                  show err]
-      Right b  -> do
+      Right b  -> (do
         let conf = b defaultConfig
+        traceIO (show conf)
         st <- initServerState opts conf
-        topServer restore st
+        traceIO "xxxx"
+        topServer restore st) `Exception.catch` \e -> traceIO (show (e :: SomeException))
 
 rereadConfig :: (IO () -> IO ()) -> ServerState -> IO ()
-rereadConfig restore st = 
+rereadConfig restore st =
     do mapM_ stopAccessLogger (serverAccessLoggers st)
        stopErrorLogger (serverErrorLogger st)
        readConfig restore (serverOptions st)
 
 initServerState :: Options -> Config -> IO ServerState
-initServerState opts conf = 
-    do host <- do ent <- getHostEntry
-                  case serverName conf of
-                    "" -> return ent
-                    n  -> return ent { hostName = n }
-       mimeTypes 
+initServerState opts conf =
+    do
+       traceIO "abc"
+       -- host <- do ent <- getHostEntry
+       --            case serverName conf of
+       --              "" -> return ent
+       --              n  -> return ent { hostName = n }
+       let host = HostEntry { hostName = "wwww.example.com" }
+       traceIO "yyy"
+       mimeTypes
            <- initMimeTypes (inServerRoot opts (typesConfig conf))
-       errorLogger  
+       errorLogger
            <- startErrorLogger (inServerRoot opts (errorLogFile conf)) (logLevel conf)
        accessLoggers
           <- sequence [startAccessLogger format (inServerRoot opts file)
@@ -179,7 +185,7 @@ initServerState opts conf =
        foldM loadModule st staticModules
 
 loadModule :: ServerState -> ModuleDesc -> IO ServerState
-loadModule st md = 
+loadModule st md =
     (do logInfo st $ "Loading module " ++ moduleName md ++ "..."
         m <- moduleLoad md
         moduleLoadConfig m st
@@ -199,21 +205,23 @@ topServer restore st
     `Exception.catch`
     (\e -> do logError st ("server: " ++ show (e :: SomeException))
               topServer restore st)
-  where startServers = 
-            do ts <- servers st
-               (wait `Exception.catch` 
+  where startServers =
+            do traceIO "st"
+               ts <- servers st
+               (wait `Exception.catch`
                 (\e -> case e of
-                         ErrorCall "**restart**" -> 
+                         ErrorCall "**restart**" ->
                              do mapM_ killThread ts
                                 rereadConfig restore st
                          _ -> Exception.throw e))
 
 servers :: ServerState -> IO [ThreadId]
-servers st = 
-  do addrs <- mapM mkAddr (listen (serverConfig st))
-     mapM (\ (st',addr) -> forkIO (server st' addr)) addrs
+servers st = do
+  traceIO (show (listen (serverConfig st)))
+  addrs <- mapM mkAddr (listen (serverConfig st))
+  mapM (\ (st',addr) -> forkIO (server st' addr)) addrs
   where
-    mkAddr (maddr,port) = 
+    mkAddr (maddr,port) =
       do addr <- case maddr of
                    Nothing -> return 0
                    Just ip -> return $ toHostAddress (read ip :: IPv4)
@@ -224,6 +232,7 @@ servers st =
 -- open the server socket and start accepting connections
 server :: ServerState -> SockAddr -> IO ()
 server st addr = do
+  traceIO ("xxx")
   logInfo st $ "Starting server thread on " ++ show addr
   proto <- getProtocolNumber "tcp"
   Exception.bracket
@@ -247,7 +256,7 @@ acceptConnections st sock = do
   let ip = inet_ntoa haddr
   debug st $ "Got connection from " ++ ip ++ ":" ++ show port
   forkIO ( (talk st h haddr  `finally`  (hClose h))
-            `Exception.catch` 
+            `Exception.catch`
           (\e -> debug st ("servlet died: "  ++ show (e :: SomeException)))
         )
   acceptConnections st sock
@@ -281,22 +290,22 @@ run st first h haddr = do
                               when first (response st h (requestTimeOutResponse conf))
                               return Nothing
                               )
-           (\e -> 
+           (\e ->
                 if isEOFError e
                      then debug st "EOF from client" >> return Nothing
-                     else do logError st ("request: " ++ show e) 
+                     else do logError st ("request: " ++ show e)
                              return Nothing )
 
     case req of { Nothing -> return ();  Just r -> do
     case parse pRequestHeaders "Request" r of
 
          -- close the connection after a badly formatted request
-         Left err -> do 
+         Left err -> do
               debug st (show err)
               response st h (badRequestResponse conf)
               return ()
 
-         Right req_no_body  -> do 
+         Right req_no_body  -> do
               req <- getBody h req_no_body
               debug st $ show req
               resp <- request st req haddr
@@ -319,7 +328,7 @@ run st first h haddr = do
 
 
 getBody :: Handle -> Request -> IO Request
-getBody h req = do b <- readBody 
+getBody h req = do b <- readBody
                    return $ req { reqBody = b}
   where
     -- FIXME: handled chunked input
@@ -350,7 +359,7 @@ serverRequest st req haddr
          e_host <- getServerHostName st req
          case e_host of
            Left resp -> return (sreq1, Just resp)
-           Right host -> 
+           Right host ->
                do let sreq2 = sreq1 { requestHostName = host }
                   e_path <- requestAbsPath st req
                   case e_path of
@@ -360,7 +369,7 @@ serverRequest st req haddr
                            e_file <- translatePath st path
                            case e_file of
                              Left resp -> return (sreq3, Just resp)
-                             Right file -> 
+                             Right file ->
                                  do let sreq4 = sreq3 { serverFilename = file }
                                     return (sreq4, Nothing)
     )
@@ -388,19 +397,19 @@ maybeLookupHostname conf haddr =
                 (\_ -> return Nothing)
       else return Nothing
 
--- make sure we've got a host field 
+-- make sure we've got a host field
 -- if the request version is >= HTTP/1.1
 getServerHostName :: ServerState -> Request -> IO (Either Response HostEntry)
 getServerHostName st req
     = case getHost req of
-        Nothing | reqHTTPVer req < http1_1 
+        Nothing | reqHTTPVer req < http1_1
                     -> return $ Right (serverHostName st)
-                | otherwise 
+                | otherwise
                     -> return $ Left (badRequestResponse conf)
-        Just (host,_) 
-            | isServerHost host 
+        Just (host,_)
+            | isServerHost host
                 -> return $ Right ((serverHostName st) { hostName = host })
-            | otherwise 
+            | otherwise
                 -> do logError st ("Unknown host: " ++ show host)
                       return $ Left $ notFoundResponse conf
   where conf = serverConfig st
@@ -416,7 +425,7 @@ requestAbsPath st req = return $ Right $ uriPath $ reqURI req
 -- Path translation
 
 translatePath :: ServerState -> String -> IO (Either Response FilePath)
-translatePath st path = 
+translatePath st path =
   do m_file <- tryModules st (\m -> moduleTranslatePath m st path)
      case m_file of
        Just file -> return $ Right file
@@ -437,7 +446,7 @@ tweakRequest st = foldModules st (\m r -> moduleTweakRequest m st r)
 -- Request handling
 
 handleRequest :: ServerState -> ServerRequest -> IO Response
-handleRequest st req = 
+handleRequest st req =
     do m_resp <- tryModules st (\m -> moduleHandleRequest m st req)
        case m_resp of
          Just resp -> return resp
@@ -459,7 +468,7 @@ response _ h (Response { respCode = code,
                          respHeaders = headers,
                          respCoding =  tes,
                          respBody =  body,
-                         respSendBody = send_body }) = 
+                         respSendBody = send_body }) =
   do
   hPutStrCrLf h (statusLine code desc)
   hPutHeader h serverHeader
@@ -484,8 +493,8 @@ response _ h (Response { respCode = code,
   hPutStrCrLf h ""
   -- ToDo: implement transfer codings
 
-  if send_body 
-     then sendBody h body 
+  if send_body
+     then sendBody h body
      else return ()
 
 hPutHeader :: Handle -> Header -> IO ()

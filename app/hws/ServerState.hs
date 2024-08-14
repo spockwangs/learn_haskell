@@ -33,7 +33,7 @@ emptyModuleDesc = ModuleDesc
   moduleLoad = return emptyModule
  }
 
-data Module = Module 
+data Module = Module
  {
   moduleLoadConfig    :: ServerState -> IO (),
   moduleTranslatePath :: ServerState -> String -> IO (Maybe FilePath),
@@ -49,15 +49,15 @@ emptyModule = Module {
                       moduleHandleRequest = \_ _ -> return Nothing
                      }
 
-tweakFilename :: (ServerState -> FilePath -> IO FilePath) 
+tweakFilename :: (ServerState -> FilePath -> IO FilePath)
               -> ServerState -> ServerRequest -> IO ServerRequest
-tweakFilename f conf req = 
+tweakFilename f conf req =
     do filename' <- f conf (serverFilename req)
        return $ req { serverFilename = filename' }
 
 
 --
--- * ServerState 
+-- * ServerState
 --
 
 data ServerState = ServerState
@@ -75,7 +75,7 @@ data ServerState = ServerState
 -- * MIME types
 
 getMimeType :: ServerState -> FilePath -> String
-getMimeType st filename = 
+getMimeType st filename =
     maybe def show (mimeTypeOf (serverMimeTypes st) filename)
   where def = defaultType (serverConfig st)
 
@@ -95,7 +95,7 @@ logDebug :: ServerState -> String -> IO ()
 logDebug st = logErrorMessage (serverErrorLogger st) LogDebug
 
 logAccess :: ServerState -> ServerRequest -> Response -> TimeDiff -> IO ()
-logAccess st req resp delay = 
+logAccess st req resp delay =
     do msg <- mkAccessLogRequest req resp (serverHostName st) delay
        mapM_ (\l -> logAccessLogRequest l msg) (serverAccessLoggers st)
 

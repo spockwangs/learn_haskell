@@ -5,18 +5,18 @@
 -- Redistribution and use in source and binary forms, with or without
 -- modification, are permitted provided that the following conditions are
 -- met:
--- 
+--
 --  * Redistributions of source code must retain the above copyright notice,
 --    this list of conditions and the following disclaimer.
--- 
+--
 --  * Redistributions in binary form must reproduce the above copyright
 --    notice, this list of conditions and the following disclaimer in the
 --    documentation and/or other materials provided with the distribution.
--- 
+--
 --  * Neither the name of the copyright holder(s) nor the names of
 --    contributors may be used to endorse or promote products derived from
 --    this software without specific prior written permission.
--- 
+--
 -- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 -- "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 -- LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -40,29 +40,29 @@ import LogLevel
 data Config = Config {
   user                  :: String,
   group                 :: String,
-  
+
   listen                :: [(Maybe String,Int)],
 
   requestTimeout        :: Int,
   keepAliveTimeout      :: Int,
   maxClients            :: Int,
-  
+
   serverAdmin           :: String,      -- "" indicates no admin
   serverName            :: String,      -- "" indicates no canon name
   serverAlias           :: [String],
   useCanonicalName      :: Bool,
   hostnameLookups       :: Bool,
-  
+
   documentRoot          :: String,
   userDir               :: String,
   directoryIndex        :: String,
   accessFileName        :: String,
   indexes               :: Bool,
   followSymLinks        :: Bool,
-  
+
   typesConfig           :: String,
   defaultType           :: String,
-  
+
   addLanguage           :: [(String,String)],
   languagePriority      :: [String],
 
@@ -77,29 +77,29 @@ defaultConfig :: Config
 defaultConfig = Config{
   user = "nobody",
   group = "nobody",
-  
+
   listen                = [(Nothing,80)],
-  
+
   requestTimeout        = 300,
   keepAliveTimeout      = 15,
   maxClients            = 150,
-  
+
   serverAdmin           = "",
   serverName            = "",
   serverAlias           = [],
   useCanonicalName      = False,
   hostnameLookups       = False,
-  
+
   documentRoot          = ".",
   userDir               = "",
   directoryIndex        = "index.html",
   accessFileName        = ".htaccess",
   indexes               = False,
   followSymLinks        = False,
-  
+
   typesConfig           = "/etc/mime.types",
   defaultType           = "text/plain",
-  
+
   addLanguage           = [],
   languagePriority      = [],
 
@@ -107,7 +107,7 @@ defaultConfig = Config{
                             "%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-Agent}i\"")],
 
   errorLogFile          = "httpd-error.log",
-  logLevel              = LogWarn
+  logLevel              = LogDebug
   }
 
 -- not user-definable...
