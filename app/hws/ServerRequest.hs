@@ -12,7 +12,7 @@ data ServerRequest = ServerRequest
    clientRequest :: Request,
    clientAddress :: HostAddress,
    clientName :: Maybe HostEntry,
-   requestHostName :: HostEntry,
+   requestHostName :: String,
    serverURIPath :: String,
    serverFilename :: FilePath
  }

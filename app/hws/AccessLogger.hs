@@ -57,7 +57,7 @@ data AccessLogRequest = AccessLogRequest
     { 
      log_request        :: ServerRequest,
      log_response       :: Response,
-     log_server_host    :: HostEntry,
+     log_server_host    :: String,
      log_time           :: ClockTime,
      log_delay          :: TimeDiff
     }
@@ -80,7 +80,7 @@ expand :: Maybe String -> Char -> AccessLogRequest -> String
 expand arg c info = 
           case c of
             'b' -> let len = responseBodyLength (respBody resp)
-                    in if len == 0 then "-" else show len
+                   in if len == 0 then "-" else show len
             'f' -> serverFilename sreq
 
             -- %h is the hostname if hostnameLookups is on, otherwise the 
@@ -93,7 +93,7 @@ expand arg c info =
             's' -> show (respCode resp)
             't' -> formatTimeSensibly (toUTCTime (log_time info))
             'T' -> timeDiffToString (log_delay info)
-            'v' -> hostName (log_server_host info)
+            'v' -> log_server_host info
             'u' -> "-" -- FIXME: implement HTTP auth
 
             'i' -> header req arg
@@ -113,7 +113,7 @@ expand arg c info =
 stopAccessLogger :: AccessLoggerHandle -> IO ()
 stopAccessLogger l = stopLogger l
 
-mkAccessLogRequest :: ServerRequest -> Response -> HostEntry -> TimeDiff -> IO AccessLogRequest
+mkAccessLogRequest :: ServerRequest -> Response -> String -> TimeDiff -> IO AccessLogRequest
 mkAccessLogRequest req resp host delay =
     do time <- getClockTime
        return $ AccessLogRequest 

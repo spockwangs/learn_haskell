@@ -147,7 +147,7 @@ mkCGIEnv st sreq path_info
                  [
                   ("SERVER_SOFTWARE",   serverSoftware 
                                         ++ "/" ++ serverVersion),
-                  ("SERVER_NAME",       hostName (requestHostName sreq)),
+                  ("SERVER_NAME",       requestHostName sreq),
                   ("GATEWAY_INTERFACE", "CGI/1.1")
                  ]
              requestEnv = 
@@ -176,7 +176,7 @@ mkCGIEnv st sreq path_info
 writeBody :: Handle -> Request -> IO ()
 writeBody h req = do hPutStr h (reqBody req)
                      hClose h
-
+  
 -- | Reads lines form the given 'Handle' and log them with 'logError'.
 logErrorsFromHandle :: ServerState -> Handle -> IO ()
 logErrorsFromHandle st h = 

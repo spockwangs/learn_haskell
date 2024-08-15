@@ -16,9 +16,9 @@ data CmdLineOpt
 options :: [OptDescr CmdLineOpt]
 options = [
   Option ['f'] ["config"] (ReqArg O_ConfigFile "filename") 
-        ("default: " ++ show defaultConfigFile),
+    ("default: " ++ show defaultConfigFile),
   Option ['d'] ["server-root"]  (ReqArg O_ServerRoot "directory")
-        ("default: " ++ show defaultServerRoot)
+    ("default: " ++ show defaultServerRoot)
   ]
 
 usage :: String
@@ -53,6 +53,5 @@ inServerRoot opts f | "/" `isPrefixOf` f = f
 parseOptions :: [String] -> Either String Options
 parseOptions args =
     case getOpt Permute options args of
-      (flags, [], [])   -> Right flags
-      (_,     _,  errs) -> Left (concat errs ++ "\n" 
-                                 ++ usageInfo usage options)
+      (flags, [], []) -> Right flags
+      (_, _, errs) -> Left (concat errs ++ "\n" ++ usageInfo usage options)

@@ -64,7 +64,7 @@ data ServerState = ServerState
     {
      serverOptions :: Options,
      serverConfig :: Config,
-     serverHostName :: HostEntry,
+     serverHostName :: String,
      serverPort :: Int,
      serverMimeTypes :: MimeTypes,
      serverErrorLogger :: ErrorLoggerHandle,

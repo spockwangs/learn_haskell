@@ -139,12 +139,10 @@ readConfig restore opts = do
     case r of
       Left err -> die $ unlines ["Failed to parse configuration file",
                                  show err]
-      Right b  -> (do
+      Right b  -> do
         let conf = b defaultConfig
-        traceIO (show conf)
         st <- initServerState opts conf
-        traceIO "xxxx"
-        topServer restore st) `Exception.catch` \e -> traceIO (show (e :: SomeException))
+        topServer restore st
 
 rereadConfig :: (IO () -> IO ()) -> ServerState -> IO ()
 rereadConfig restore st =
@@ -155,13 +153,6 @@ rereadConfig restore st =
 initServerState :: Options -> Config -> IO ServerState
 initServerState opts conf =
     do
-       traceIO "abc"
-       -- host <- do ent <- getHostEntry
-       --            case serverName conf of
-       --              "" -> return ent
-       --              n  -> return ent { hostName = n }
-       let host = HostEntry { hostName = "wwww.example.com" }
-       traceIO "yyy"
        mimeTypes
            <- initMimeTypes (inServerRoot opts (typesConfig conf))
        errorLogger
@@ -170,18 +161,16 @@ initServerState opts conf =
           <- sequence [startAccessLogger format (inServerRoot opts file)
                        | (file,format) <- customLogs conf]
 
-       let st = ServerState
-                {
-                 serverOptions = opts,
-                 serverConfig = conf,
-                 serverHostName = host,
-                 serverPort = error "serverPort not set yet",
-                 serverMimeTypes = mimeTypes,
-                 serverErrorLogger = errorLogger,
-                 serverAccessLoggers = accessLoggers,
-                 serverModules = []
-                }
-
+       let st = ServerState {
+             serverOptions = opts,
+             serverConfig = conf,
+             serverHostName = "localhost",
+             serverPort = error "serverPort not set yet",
+             serverMimeTypes = mimeTypes,
+             serverErrorLogger = errorLogger,
+             serverAccessLoggers = accessLoggers,
+             serverModules = []
+             }
        foldM loadModule st staticModules
 
 loadModule :: ServerState -> ModuleDesc -> IO ServerState
@@ -203,36 +192,33 @@ topServer restore st
   = (do unblockSignals sigsToBlock
         restore startServers)
     `Exception.catch`
-    (\e -> do logError st ("server: " ++ show (e :: SomeException))
-              topServer restore st)
+    (\ e -> do logError st ("server: " ++ show (e :: SomeException))
+               topServer restore st)
   where startServers =
-            do traceIO "st"
-               ts <- servers st
-               (wait `Exception.catch`
-                (\e -> case e of
-                         ErrorCall "**restart**" ->
-                             do mapM_ killThread ts
-                                rereadConfig restore st
-                         _ -> Exception.throw e))
+          do ts <- servers st
+             (wait `Exception.catch`
+               (\e -> case e of
+                        ErrorCall "**restart**" ->
+                          do mapM_ killThread ts
+                             rereadConfig restore st
+                        _ -> Exception.throw e))
 
 servers :: ServerState -> IO [ThreadId]
 servers st = do
-  traceIO (show (listen (serverConfig st)))
-  addrs <- mapM mkAddr (listen (serverConfig st))
-  mapM (\ (st',addr) -> forkIO (server st' addr)) addrs
+  let addrs = map mkAddr (listen (serverConfig st))
+  mapM (\ (st', addr) -> forkIO (server st' addr)) addrs
   where
-    mkAddr (maddr,port) =
-      do addr <- case maddr of
-                   Nothing -> return 0
-                   Just ip -> return $ toHostAddress (read ip :: IPv4)
-         return (st { serverPort = port },
-                 SockAddrInet (fromIntegral port) addr)
+    mkAddr (maddr, port) =
+      let addr = case maddr of
+                   Nothing -> 0
+                   Just ip -> toHostAddress (read ip :: IPv4)
+      in
+        (st { serverPort = port }, SockAddrInet (fromIntegral port) addr)
 
 
 -- open the server socket and start accepting connections
 server :: ServerState -> SockAddr -> IO ()
 server st addr = do
-  traceIO ("xxx")
   logInfo st $ "Starting server thread on " ++ show addr
   proto <- getProtocolNumber "tcp"
   Exception.bracket
@@ -342,7 +328,7 @@ getBody h req = do b <- readBody
 
 request :: ServerState -> Request -> HostAddress -> IO Response
 request st req haddr
-  = do (sreq,merr) <- serverRequest st req haddr
+  = do (sreq, merr) <- serverRequest st req haddr
        resp <- case merr of
                  Nothing  -> do sreq' <- tweakRequest st sreq
                                 debug st $ "Handling request..."
@@ -399,7 +385,7 @@ maybeLookupHostname conf haddr =
 
 -- make sure we've got a host field
 -- if the request version is >= HTTP/1.1
-getServerHostName :: ServerState -> Request -> IO (Either Response HostEntry)
+getServerHostName :: ServerState -> Request -> IO (Either Response String)
 getServerHostName st req
     = case getHost req of
         Nothing | reqHTTPVer req < http1_1
@@ -408,7 +394,7 @@ getServerHostName st req
                     -> return $ Left (badRequestResponse conf)
         Just (host,_)
             | isServerHost host
-                -> return $ Right ((serverHostName st) { hostName = host })
+                -> return $ Right host
             | otherwise
                 -> do logError st ("Unknown host: " ++ show host)
                       return $ Left $ notFoundResponse conf
@@ -469,33 +455,32 @@ response _ h (Response { respCode = code,
                          respCoding =  tes,
                          respBody =  body,
                          respSendBody = send_body }) =
-  do
-  hPutStrCrLf h (statusLine code desc)
-  hPutHeader h serverHeader
+  do hPutStrCrLf h (statusLine code desc)
+     hPutHeader h serverHeader
 
-  -- Date Header: required on all messages
-  date <- dateHeader
-  hPutHeader h date
+     -- Date Header: required on all messages
+     date <- dateHeader
+     hPutHeader h date
 
-  mapM_ (hPutHeader h) (listHeaders headers)
+     mapM_ (hPutHeader h) (listHeaders headers)
 
-  -- Output a Content-Length when the message body isn't
-  -- encoded.  If it *is* encoded, then the last transfer
-  -- coding must be "chunked", according to RFC2616 sec 3.6.  This
-  -- allows the client to determine the message-length.
-  let content_length = responseBodyLength body
+     -- Output a Content-Length when the message body isn't
+     -- encoded.  If it *is* encoded, then the last transfer
+     -- coding must be "chunked", according to RFC2616 sec 3.6.  This
+     -- allows the client to determine the message-length.
+     let content_length = responseBodyLength body
 
-  when (hasBody body && null tes)
-     (hPutHeader h (contentLengthHeader content_length))
+     when (hasBody body && null tes)
+       (hPutHeader h (contentLengthHeader content_length))
 
-  mapM_ (hPutHeader h . transferCodingHeader) tes
+     mapM_ (hPutHeader h . transferCodingHeader) tes
 
-  hPutStrCrLf h ""
-  -- ToDo: implement transfer codings
+     hPutStrCrLf h ""
+     -- ToDo: implement transfer codings
 
-  if send_body
-     then sendBody h body
-     else return ()
+     if send_body
+       then sendBody h body
+       else return ()
 
 hPutHeader :: Handle -> Header -> IO ()
 hPutHeader h = hPutStrCrLf h . show
