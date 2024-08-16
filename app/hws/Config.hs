@@ -97,14 +97,14 @@ defaultConfig = Config{
   indexes               = False,
   followSymLinks        = False,
 
-  typesConfig           = "/etc/mime.types",
+  typesConfig           = "app/hws/mime.types",
   defaultType           = "text/plain",
 
   addLanguage           = [],
   languagePriority      = [],
 
   customLogs            = [("http-access.log",
-                            "%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-Agent}i\"")],
+                            "%h %l %u %t %T \"%r\" %s %b \"%{Referer}i\" \"%{User-Agent}i\"")],
 
   errorLogFile          = "httpd-error.log",
   logLevel              = LogDebug

@@ -63,6 +63,7 @@ import System.Posix
 import Text.ParserCombinators.Parsec
 import Data.IP (IPv4, toHostAddress)
 import Debug.Trace (trace, traceIO)
+import System.Time (getClockTime, diffClockTimes)
 
 {- -----------------------------------------------------------------------------
 ToDo:
@@ -189,19 +190,16 @@ loadModule st md =
 -- re-read the configuration file.
 topServer :: (IO () -> IO ()) -> ServerState -> IO ()
 topServer restore st
-  = (do unblockSignals sigsToBlock
-        restore startServers)
-    `Exception.catch`
-    (\ e -> do logError st ("server: " ++ show (e :: SomeException))
-               topServer restore st)
-  where startServers =
-          do ts <- servers st
-             (wait `Exception.catch`
-               (\e -> case e of
-                        ErrorCall "**restart**" ->
-                          do mapM_ killThread ts
-                             rereadConfig restore st
-                        _ -> Exception.throw e))
+  = restore $ do
+  unblockSignals sigsToBlock
+  ts <- servers st
+  wait `Exception.catches`
+    [Exception.Handler (\ e -> case e of
+                           ErrorCall "**restart**" -> do logError st $ "topserver: try to restart"
+                                                         mapM_ killThread ts
+                                                         rereadConfig restore st
+                           _ -> throw e),
+     Exception.Handler (\ e -> logError st $ "topserver: " ++ show (e :: SomeException))]
 
 servers :: ServerState -> IO [ThreadId]
 servers st = do
@@ -329,13 +327,15 @@ getBody h req = do b <- readBody
 request :: ServerState -> Request -> HostAddress -> IO Response
 request st req haddr
   = do (sreq, merr) <- serverRequest st req haddr
+       startTime <- getClockTime
        resp <- case merr of
                  Nothing  -> do sreq' <- tweakRequest st sreq
                                 debug st $ "Handling request..."
                                 handleRequest st sreq'
                  Just err -> return err
+       endTime <- getClockTime
        debug st (showResponseLine resp)
-       logAccess st sreq resp (error "noTimeDiff"){-FIXME-}
+       logAccess st sreq resp (diffClockTimes endTime startTime)
        return resp
 
 serverRequest :: ServerState -> Request -> HostAddress -> IO (ServerRequest, Maybe Response)

@@ -129,7 +129,6 @@ executable hws
         network-uri,
         network-bsd,
         iproute
-    ghc-options: -threaded
     other-modules:
         AccessLogger
         Config

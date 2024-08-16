@@ -14,7 +14,8 @@ import Util
 import Control.Concurrent (myThreadId)
 import Control.Monad
 import Network.BSD (HostEntry)
-import System.Time (TimeDiff)
+import System.Time (TimeDiff, timeDiffToString)
+import Debug.Trace (trace, traceIO)
 
 --
 -- * Module API
@@ -96,7 +97,8 @@ logDebug st = logErrorMessage (serverErrorLogger st) LogDebug
 
 logAccess :: ServerState -> ServerRequest -> Response -> TimeDiff -> IO ()
 logAccess st req resp delay =
-    do msg <- mkAccessLogRequest req resp (serverHostName st) delay
+    do traceIO $ show delay
+       msg <- mkAccessLogRequest req resp (serverHostName st) delay
        mapM_ (\l -> logAccessLogRequest l msg) (serverAccessLoggers st)
 
 -- ** Modules
